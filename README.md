@@ -1,47 +1,208 @@
-# SamsungSpeakerController
-I wanted the ability to create speaker groups without opening up the app but by using Alexa. I want to be able to say "Alexa ask Samsung to create groupone with the kitchen and livingroom speakers" then have an Alexa intent do it for me. I then want to tell Alexa to use this group "Alexa ask Spotify to play my playlist on groupone". I don't have a smartthings hub and not sure if it can be done with that but since I don't have it I am going to use Alexa and Home Assitant. To be able to do that I needed to figure out how the HTTP Group calls to the speakers worked. Here is my findings:
+# Samsung Speaker Controller
 
-- The way it works, as far as I can see, is that when you create a group you assign one of the speakers as the master (from the code it looks like it picks the one that was first selected to be part of the group)
-- You sends a specific call to a speaker to let it know it's the master, the name of the group, and the slave speakers IP addresses and mac addresses.
-- It then sends a specific call to each slave speaker that is part of the group and provide the masters IP address and mac address. (UPDATE: I am not sure this is actually needed.  No harm if its done but I found that if I send the call to the master only it still groups).
+A Spring Boot application for controlling Samsung speakers, featuring a REST API and a web-based user interface.
 
-Here are the calls that go out to my speakers. I am using two speakers. The master is the "Kitchen" speaker with an IP address of 1.2.3.4 and a MAC address of 01:02:03:04:05:06. The slave is the "Boysroom" speaker with an IP address of 9.8.7.6 and a MAC address of 11:22:33:44:55:66.
+## Table of Contents
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Endpoints](#api-endpoints)
+- [Web UI](#web-ui)
+- [Scripts](#scripts)
+- [Configuration](#configuration)
+- [Docker Support](#docker-support)
+- [License](#license)
 
-First, call the master speaker with the all the info about the group:
+## Features
+
+- **Speaker Grouping**: Group multiple Samsung speakers together for synchronized playback
+- **Speaker Ungrouping**: Remove speakers from groups or ungroup all speakers at once
+- **REST API**: Programmatic control via HTTP endpoints
+- **Web Interface**: User-friendly web UI for easy control
+- **mDNS Discovery**: Automatic discovery of Samsung speakers on the network
+
+## Prerequisites
+
+- Java 11 or higher
+- Maven 3.6.0 or higher
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Lunatic16/samwamgrp.git
+   cd SamsungSpeakerController
+   ```
+
+2. Build the project:
+   ```bash
+   mvn clean package -DskipTests
+   ```
+
+## Usage
+
+### Running the Application
+
+#### Method 1: Using Maven
+```bash
+mvn spring-boot:run
 ```
-http://1.2.3.4:55001/UIC?cmd=<pwron>on</pwron><name>SetMultispkGroup</name>
-<p type="cdata" name="name" val="empty"><![CDATA[Kitchen + Boysroom]]></p>
-<p type="dec" name="index" val="1"/>
-<p type="str" name="type" val="main"/>
-<p type="dec" name="spknum" val="2"/>
-<p type="str" name="audiosourcemacaddr" val="01:02:03:04:05:06"/>
-<p type="cdata" name="audiosourcename" val="empty"><![CDATA[Kitchen]]></p>
-<p type="str" name="audiosourcetype" val="speaker"/>
-<p type="str" name="subspkip" val="9.8.7.6"/>
-<p type="str" name="subspkmacaddr" val="11:22:33:44:55:66"/>
+
+#### Method 2: Using JAR file
+```bash
+java -jar target/controller-0.0.1-SNAPSHOT.jar
 ```
 
-Then call the slave speaker
-```
-http://9.8.7.6:55001/UIC?cmd=<pwron>on</pwron><name>SetMultispkGroup</name>
-<p type="cdata" name="name" val="empty"><![CDATA[Kitchen + Boysroom]]></p>
-<p type="dec" name="index" val="1"/>
-<p type="str" name="type" val="sub"/>
-<p type="dec" name="spknum" val="2"/>
-<p type="str" name="mainspkip" val="1.2.3.4"/>
-<p type="str" name="mainspkmacaddr" val="01:02:03:04:05:06"/>
+#### Method 3: Using Scripts (recommended)
+```bash
+# Start the application
+./start.sh
+
+# Stop the application
+./stop.sh
 ```
 
-Keep in mind for the master call:
-1. Name can be any string you want and is set in the CDATA (becarefull of special characters, not sure if that works)
-2. I found index 1 always works (not sure what its for though)
-3. Type is "main"
-4. spknum is the number of speakers in the group including the master
+The application will be accessible at `http://localhost:8888`
 
-Keep in mind for the slave call:
-1. Name matches what was sent to the master
-2. Index is 1, same as master
-3. Type is "sub"
-4. spknum is the number of speakers in the group including the master. Same as master.
+### Web UI Access
 
-I hope this helps someone else.
+After starting the application, navigate to:
+- `http://localhost:8888` in your web browser
+
+The web UI provides:
+- System status monitoring
+- Speaker discovery and listing
+- Group creation functionality
+- Group management (ungrouping)
+- Response logging
+
+## API Endpoints
+
+### Group Speakers
+- **POST** `/group`
+- Create a group of speakers
+- Request body (JSON):
+  ```json
+  {
+    "speakerName": ["speaker1", "speaker2", "speaker3"]
+  }
+  ```
+- Optional query parameter: `group_name`
+- Response: JSON with status and group name
+
+### Ungroup Speakers
+- **GET** `/ungroup`
+- Ungroup speakers
+- Optional query parameter: `group_name` (to ungroup specific group, or omit to ungroup all)
+- Response: JSON with operation status
+
+## Scripts
+
+### Start Script
+The `start.sh` script:
+- Builds the project if necessary
+- Starts the application in the background
+- Stores the process PID in `controller.pid`
+- Logs output to `controller.log`
+- Prevents multiple instances from running
+
+### Stop Script
+The `stop.sh` script:
+- Reads the PID from `controller.pid`
+- Sends a termination signal to the process
+- Falls back to process name matching if PID file is missing
+- Removes the PID file after stopping
+
+## Configuration
+
+### Application Properties
+The application uses `config/application.properties` which is copied to the classpath during build:
+- Default server port: 8888
+
+### Customization
+To change the server port or other settings, modify `config/application.properties`:
+```properties
+server.port = 8888
+```
+
+## Docker Support
+
+The project includes a `Dockerfile` for containerization:
+```bash
+# Build the Docker image
+docker build -t samsung-speaker-controller .
+
+# Run the container
+docker run -p 8888:8888 samsung-speaker-controller
+```
+
+## Development
+
+### Project Structure
+```
+SamsungSpeakerController/
+├── config/                    # Configuration files
+│   └── application.properties
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/kajahla/speakers/samsung/controller/
+│   │   │       ├── ControllerApplication.java     # Main Spring Boot application
+│   │   │       ├── WebUIController.java           # Web UI endpoints
+│   │   │       ├── SpeakerController.java         # API endpoints
+│   │   │       └── model/
+│   │   │           ├── GroupInfo.java
+│   │   │           ├── SpeakerInfo.java
+│   │   │           └── SpeakerList.java
+│   │   └── resources/
+│   │       └── static/                            # Web UI files
+│   │           ├── index.html
+│   │           ├── style.css
+│   │           └── script.js
+│   └── test/
+├── start.sh                   # Start script
+├── stop.sh                    # Stop script
+├── pom.xml                    # Maven configuration
+└── Dockerfile
+```
+
+### Building from Source
+```bash
+# Clean and build
+mvn clean package
+
+# Build without running tests
+mvn clean package -DskipTests
+
+# Compile only
+mvn compile
+```
+
+## Troubleshooting
+
+### Common Issues
+1. **Port already in use**: Make sure port 8888 is not being used by another application
+2. **Speaker Discovery**: Ensure Samsung speakers are on the same network and mDNS is enabled
+3. **Access from other machines**: The default configuration only binds to localhost
+
+### Logs
+Check `controller.log` when using the start script, or view console output when running directly.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Uses Spring Boot for the web framework
+- Uses JmDNS for service discovery
+- Inspired by the need for better multiroom audio control

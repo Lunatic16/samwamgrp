@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samsung Speaker Controller</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Samsung Speaker Controller</h1>
+        </header>
+
+        <main>
+            <section class="status-section">
+                <h2>System Status</h2>
+                <div class="status-indicator">
+                    <span id="status-text">Checking connection...</span>
+                    <span id="status-indicator" class="status-dot"></span>
+                </div>
+                <button id="refresh-btn" class="btn">Refresh Speakers</button>
+            </section>
+
+            <section class="speakers-section">
+                <h2>Available Speakers</h2>
+                <div id="speakers-container" class="speakers-grid">
+                    <p class="loading">Loading speakers...</p>
+                </div>
+            </section>
+
+            <section class="group-section">
+                <h2>Create Group</h2>
+                <div class="form-group">
+                    <label for="group-name">Group Name (optional):</label>
+                    <input type="text" id="group-name" placeholder="Enter group name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Select speakers to group:</label>
+                    <div id="group-speakers-container" class="speakers-list">
+                        <p class="loading">Loading speakers...</p>
+                    </div>
+                </div>
+                
+                <button id="create-group-btn" class="btn btn-primary">Create Group</button>
+            </section>
+
+            <section class="ungroup-section">
+                <h2>Ungroup Speakers</h2>
+                <div class="form-group">
+                    <label for="select-group">Select Group to Ungroup:</label>
+                    <select id="select-group">
+                        <option value="">-- Select a group --</option>
+                        <option value="all">All Groups</option>
+                    </select>
+                </div>
+                
+                <button id="ungroup-btn" class="btn btn-danger">Ungroup</button>
+            </section>
+
+            <section class="response-section">
+                <h2>Response</h2>
+                <div id="response-container" class="response-box">
+                    <p>Waiting for action...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
