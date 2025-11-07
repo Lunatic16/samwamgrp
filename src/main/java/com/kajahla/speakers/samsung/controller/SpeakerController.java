@@ -94,8 +94,12 @@ public class SpeakerController {
                         System.out.println("Found and Added Speaker -> " + newSpeaker.toString());
                     }
 
+                } catch (java.net.ConnectException e) {
+                    // Connection refused is expected when no actual Samsung speaker is at the IP
+                    System.out.println("Could not connect to potential speaker " + event.getName() + ": " + e.getMessage());
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.println("Error processing speaker " + event.getName() + ": " + e.getMessage());
+                    // e.printStackTrace(); // Don't print full stack trace for expected network errors
                 }
             }
         }
