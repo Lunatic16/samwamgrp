@@ -6,10 +6,7 @@ import com.kajahla.speakers.samsung.controller.model.SpeakerList;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceEvent;
@@ -18,7 +15,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
-import java.util.HashMap;
+import java.util.*;
 
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
@@ -215,6 +212,12 @@ public class SpeakerController {
         }
 
         return ResponseEntity.ok("{ \"status\": \"success\" }");
+    }
+
+    @RequestMapping(value = "/speakers", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<List<SpeakerInfo>> getSpeakers() {
+        List<SpeakerInfo> speakerList = new ArrayList<>(speakers.values());
+        return ResponseEntity.ok(speakerList);
     }
 
     private String sendGet(String url) throws Exception {

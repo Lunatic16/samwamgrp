@@ -2,7 +2,7 @@
 class SpeakerControllerUI {
     constructor() {
         this.apiBaseUrl = `http://localhost:8888`;
-        this.speakers = [];
+        this.speakers = {};
         this.selectedSpeakers = new Set();
         
         this.initializeElements();
@@ -32,9 +32,9 @@ class SpeakerControllerUI {
     
     async checkConnection() {
         try {
-            // Try to make a simple request to check if the server is running
-            const response = await fetch(this.apiBaseUrl + '/status', { method: 'GET' });
-            if (response.ok || response.status === 404) { // 404 is fine, means server is running
+            // Check if the API is reachable by fetching speakers
+            const response = await fetch(`${this.apiBaseUrl}/speakers`);
+            if (response.ok) {
                 this.updateStatus(true, 'Connected');
             } else {
                 this.updateStatus(false, 'Connection Error');
@@ -59,12 +59,19 @@ class SpeakerControllerUI {
         this.showLoading(this.groupSpeakersContainer);
         
         try {
-            // Since the backend doesn't have a direct endpoint to list speakers,
-            // we'll display a message indicating that speakers are discovered via mDNS
-            this.showSpeakersPlaceholder();
+            const response = await fetch(`${this.apiBaseUrl}/speakers`);
+            const speakers = await response.json();
+            
+            this.speakers = {};
+            speakers.forEach(speaker => {
+                this.speakers[speaker.name] = speaker;
+            });
+            
+            this.displaySpeakers();
         } catch (error) {
-            this.showError('Error loading speakers', this.speakersContainer);
-            this.showError('Error loading speakers', this.groupSpeakersContainer);
+            console.error('Error loading speakers:', error);
+            this.showError('Error loading speakers: ' + error.message, this.speakersContainer);
+            this.showError('Error loading speakers: ' + error.message, this.groupSpeakersContainer);
         }
     }
     
@@ -76,60 +83,53 @@ class SpeakerControllerUI {
         container.innerHTML = `<p class="error">${message}</p>`;
     }
     
-    showSpeakersPlaceholder() {
-        // Since the actual speakers are discovered via mDNS in the backend,
-        // we'll create a UI to allow users to input speaker info
-        const html = `
-            <div class="speaker-card">
-                <h3>Speaker Discovery</h3>
-                <p class="speaker-details">Speakers are discovered automatically via mDNS.</p>
-                <p class="speaker-details">This web interface is primarily a control interface.</p>
-            </div>
-            <div class="speaker-card">
-                <h3>Add Speaker Manually</h3>
-                <div class="form-group">
-                    <label for="manual-speaker-name">Speaker Name:</label>
-                    <input type="text" id="manual-speaker-name" placeholder="Enter speaker name">
+    displaySpeakers() {
+        // Display speakers in the main speakers section
+        if (Object.keys(this.speakers).length === 0) {
+            this.speakersContainer.innerHTML = '<p class="loading">No speakers discovered yet. Speakers will appear here when discovered via mDNS.</p>';
+        } else {
+            const speakerCards = Object.values(this.speakers).map(speaker => `
+                <div class="speaker-card">
+                    <h3>${this.escapeHtml(speaker.name)}</h3>
+                    <div class="speaker-details">
+                        <p><strong>IP:</strong> ${this.escapeHtml(speaker.ip)}</p>
+                        <p><strong>Port:</strong> ${this.escapeHtml(speaker.port)}</p>
+                        <p><strong>MAC:</strong> ${this.escapeHtml(speaker.mac)}</p>
+                        ${speaker.groupName ? `<p><strong>Group:</strong> ${this.escapeHtml(speaker.groupName)}</p>` : ''}
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="manual-speaker-ip">IP Address:</label>
-                    <input type="text" id="manual-speaker-ip" placeholder="Enter IP (e.g., 192.168.1.100)">
-                </div>
-                <button id="add-speaker-btn" class="btn btn-primary">Add Speaker</button>
-            </div>
-        `;
-        
-        this.speakersContainer.innerHTML = html;
-        this.groupSpeakersContainer.innerHTML = `
-            <div class="speaker-card">
-                <h3>Note</h3>
-                <p class="speaker-details">Speakers discovered by the backend will appear here for grouping.</p>
-                <p class="speaker-details">Currently, the backend discovers speakers via mDNS and makes them available.</p>
-            </div>
-        `;
-        
-        // Add event for manual speaker
-        document.getElementById('add-speaker-btn')?.addEventListener('click', () => {
-            this.addManualSpeaker();
-        });
-    }
-    
-    addManualSpeaker() {
-        const name = document.getElementById('manual-speaker-name').value;
-        const ip = document.getElementById('manual-speaker-ip').value;
-        
-        if (!name || !ip) {
-            this.showMessage('Please enter both name and IP address', 'error');
-            return;
+            `).join('');
+            
+            this.speakersContainer.innerHTML = speakerCards;
         }
         
-        // Add to a temporary list for UI demonstration
-        const speaker = { name, ip, port: '55001' };
-        this.showMessage(`Added speaker: ${name} (${ip})`, 'success');
-        
-        // Reset the form
-        document.getElementById('manual-speaker-name').value = '';
-        document.getElementById('manual-speaker-ip').value = '';
+        // Display speakers in the group selection section
+        if (Object.keys(this.speakers).length === 0) {
+            this.groupSpeakersContainer.innerHTML = '<p class="loading">No speakers discovered yet. Speakers will appear here for grouping.</p>';
+        } else {
+            const speakerCheckboxes = Object.values(this.speakers).map(speaker => `
+                <div class="speaker-checkbox">
+                    <input type="checkbox" id="chk_${this.escapeHtml(speaker.name)}" value="${this.escapeHtml(speaker.name)}" 
+                        onchange="speakerUI.toggleSpeakerSelection('${this.escapeHtml(speaker.name)}')">
+                    <label for="chk_${this.escapeHtml(speaker.name)}">
+                        <strong>${this.escapeHtml(speaker.name)}</strong> - ${this.escapeHtml(speaker.ip)}
+                        ${speaker.groupName ? ` (Group: ${this.escapeHtml(speaker.groupName)})` : ''}
+                    </label>
+                </div>
+            `).join('');
+            
+            this.groupSpeakersContainer.innerHTML = speakerCheckboxes;
+        }
+    }
+    
+    escapeHtml(text) {
+        if (!text) return '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
     
     async createGroup() {
@@ -162,6 +162,12 @@ class SpeakerControllerUI {
             
             const result = await response.text();
             this.showMessage(`Group creation response: ${result}`, response.status === 200 ? 'success' : 'error');
+            
+            // Reload speakers to reflect changes
+            setTimeout(() => {
+                this.loadSpeakers();
+            }, 1000);
+            
         } catch (error) {
             this.showMessage(`Error creating group: ${error.message}`, 'error');
         } finally {
@@ -192,6 +198,12 @@ class SpeakerControllerUI {
             
             const result = await response.text();
             this.showMessage(`Ungroup response: ${result}`, response.status === 200 ? 'success' : 'error');
+            
+            // Reload speakers to reflect changes
+            setTimeout(() => {
+                this.loadSpeakers();
+            }, 1000);
+            
         } catch (error) {
             this.showMessage(`Error ungrouping: ${error.message}`, 'error');
         } finally {
@@ -232,7 +244,10 @@ class SpeakerControllerUI {
     }
 }
 
+// Global variable to allow access from inline event handlers
+let speakerUI;
+
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new SpeakerControllerUI();
+    speakerUI = new SpeakerControllerUI();
 });
