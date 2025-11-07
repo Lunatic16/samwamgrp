@@ -85,13 +85,28 @@ public class SpeakerController {
                     if (list.getLength() > 0) {
                         Element node = (Element) list.item(0);
 
-                        SpeakerInfo newSpeaker = new SpeakerInfo(event.getName().toLowerCase(),
-                                event.getInfo().getInetAddresses()[0].getHostAddress(),
-                                "55001",
-                                 node.getFirstChild().getNodeValue());
-                        speakers.put(newSpeaker.getName().toLowerCase(), newSpeaker);
-
-                        System.out.println("Found and Added Speaker -> " + newSpeaker.toString());
+                        String speakerName = event.getName().toLowerCase();
+                        String ip = event.getInfo().getInetAddresses()[0].getHostAddress();
+                        String mac = node.getFirstChild().getNodeValue();
+                        
+                        // Check if speaker already exists (by name, IP, or MAC)
+                        boolean alreadyExists = false;
+                        for (SpeakerInfo existingSpeaker : speakers.values()) {
+                            if (existingSpeaker.getName().equals(speakerName) || 
+                                existingSpeaker.getIp().equals(ip) || 
+                                existingSpeaker.getMac().equals(mac)) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!alreadyExists) {
+                            SpeakerInfo newSpeaker = new SpeakerInfo(speakerName, ip, "55001", mac);
+                            speakers.put(speakerName, newSpeaker);
+                            System.out.println("Found and Added Speaker -> " + newSpeaker.toString());
+                        } else {
+                            System.out.println("Speaker already discovered, skipping: " + speakerName);
+                        }
                     }
 
                 } catch (java.net.ConnectException e) {
