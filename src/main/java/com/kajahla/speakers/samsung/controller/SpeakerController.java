@@ -273,45 +273,48 @@ public class SpeakerController {
             Document document = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes("utf-8"))));
 
             NodeList macList = document.getElementsByTagName("mac");
-            NodeList nameList = document.getElementsByTagName("name"); // Use the actual name from the device if available
+            NodeList nameList = document.getElementsByTagName("name");
+            NodeList modelList = document.getElementsByTagName("model");
 
             String mac = null;
-            String speakerName = name; // Use provided name, or fall back to IP if not provided
+            String extractedName = name; // Use provided name, or fall back to device name if not provided
+            String model = "Unknown"; // Default model value
             
-            if (name == null || name.trim().isEmpty()) {
-                // Try to get the name from the device response
-                if (nameList.getLength() > 0) {
-                    Element nameNode = (Element) nameList.item(0);
-                    if (nameNode.getFirstChild() != null) {
-                        speakerName = nameNode.getFirstChild().getNodeValue().toLowerCase();
-                    } else {
-                        speakerName = ip.replace(".", "_"); // Fallback: use IP as name
-                    }
-                } else {
-                    speakerName = ip.replace(".", "_"); // Fallback: use IP as name
-                }
-            }
-            
+            // Extract MAC from response
             if (macList.getLength() > 0) {
                 Element macNode = (Element) macList.item(0);
                 mac = macNode.getFirstChild().getNodeValue();
             }
+            
+            // Extract name from device response if no name was provided manually
+            if (name == null || name.trim().isEmpty()) {
+                if (nameList.getLength() > 0) {
+                    Element nameNode = (Element) nameList.item(0);
+                    if (nameNode.getFirstChild() != null) {
+                        extractedName = nameNode.getFirstChild().getNodeValue().toLowerCase();
+                    } else {
+                        extractedName = ip.replace(".", "_"); // Fallback: use IP as name
+                    }
+                } else {
+                    extractedName = ip.replace(".", "_"); // Fallback: use IP as name
+                }
+            } else {
+                extractedName = name; // Use the manually provided name
+            }
+            
+            // Extract model from device response if available
+            if (modelList.getLength() > 0) {
+                Element modelNode = (Element) modelList.item(0);
+                if (modelNode.getFirstChild() != null) {
+                    model = modelNode.getFirstChild().getNodeValue();
+                }
+            }
 
             if (mac != null) {
-                // Extract model from the device response if available
-                String model = "Unknown";
-                NodeList modelList = document.getElementsByTagName("model");
-                if (modelList.getLength() > 0) {
-                    Element modelNode = (Element) modelList.item(0);
-                    if (modelNode.getFirstChild() != null) {
-                        model = modelNode.getFirstChild().getNodeValue();
-                    }
-                }
-                
                 // Check if speaker already exists (by name, IP, or MAC)
                 boolean alreadyExists = false;
                 for (SpeakerInfo existingSpeaker : speakers.values()) {
-                    if (existingSpeaker.getName().equals(speakerName) || 
+                    if (existingSpeaker.getName().equals(extractedName) || 
                         existingSpeaker.getIp().equals(ip) || 
                         existingSpeaker.getMac().equals(mac)) {
                         alreadyExists = true;
@@ -320,11 +323,11 @@ public class SpeakerController {
                 }
                 
                 if (!alreadyExists) {
-                    SpeakerInfo newSpeaker = new SpeakerInfo(speakerName, ip, "55001", mac);
+                    SpeakerInfo newSpeaker = new SpeakerInfo(extractedName, ip, "55001", mac);
                     newSpeaker.setModel(model);
-                    speakers.put(speakerName, newSpeaker);
+                    speakers.put(extractedName, newSpeaker);
                     System.out.println("Manually added speaker: " + newSpeaker.toString());
-                    return ResponseEntity.ok("{\"status\": \"success\", \"message\": \"Speaker added successfully\", \"speaker\": {\"name\": \"" + speakerName + "\", \"ip\": \"" + ip + "\"}}");
+                    return ResponseEntity.ok("{\"status\": \"success\", \"message\": \"Speaker added successfully\", \"speaker\": {\"name\": \"" + extractedName + "\", \"ip\": \"" + ip + "\"}}");
                 } else {
                     return ResponseEntity.badRequest().body("{\"status\": \"error\", \"message\": \"Speaker already exists\"}");
                 }
