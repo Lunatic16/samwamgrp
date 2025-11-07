@@ -99,20 +99,19 @@ The web UI provides:
 
 ## Scripts
 
-### Start Script
-The `start.sh` script:
-- Builds the project if necessary
-- Starts the application in the background
+### Controller Script
+The `controller.sh` script provides start, stop, restart, and status functions:
+- `./controller.sh start` - Builds the project if necessary and starts the application in the background
+- `./controller.sh stop` - Stops the running application
+- `./controller.sh restart` - Restarts the application
+- `./controller.sh status` - Shows the status of the application
+- `./controller.sh help` - Shows usage information
+
+The script:
 - Stores the process PID in `controller.pid`
 - Logs output to `controller.log`
 - Prevents multiple instances from running
-
-### Stop Script
-The `stop.sh` script:
-- Reads the PID from `controller.pid`
-- Sends a termination signal to the process
-- Falls back to process name matching if PID file is missing
-- Removes the PID file after stopping
+- Automatically finds and manages the application process
 
 ## Configuration
 
