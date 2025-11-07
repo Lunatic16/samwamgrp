@@ -1,24 +1,20 @@
+# Log files
+*.log
+controller.log
+
+# Build artifacts
 target/
-!.mvn/wrapper/maven-wrapper.jar
 
-### STS ###
-.apt_generated
+# IDE files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.settings/
 .classpath
-.factorypath
 .project
-.settings
-.springBeans
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-nbproject/private/
-build/
-nbbuild/
-dist/
-nbdist/
-.nb-gradle/
+# OS generated files
+.DS_Store
+Thumbs.db
