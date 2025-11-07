@@ -41,7 +41,7 @@ public class SpeakerController {
             jmdns.addServiceListener("_spotify-connect._tcp.local.", new SamsungSpeakerListener());
 
             // Wait for speakers to be discovered
-            Thread.sleep(60000);
+            Thread.sleep(20000);
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());
@@ -237,6 +237,74 @@ public class SpeakerController {
     public ResponseEntity<List<SpeakerInfo>> getSpeakers() {
         List<SpeakerInfo> speakerList = new ArrayList<>(speakers.values());
         return ResponseEntity.ok(speakerList);
+    }
+
+    @RequestMapping(value = "/addSpeaker", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<String> addSpeaker(@RequestParam("ip") String ip, 
+                                              @RequestParam(value = "name", required = false) String name) {
+        try {
+            // Attempt to verify if this is a Samsung speaker by trying to connect to it
+            String testUrl = "http://" + ip + ":55001/UIC?cmd=<name>GetApInfo</name>";
+            String response = sendGet(testUrl);
+            
+            // Parse the response to make sure it's a valid Samsung speaker
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes("utf-8"))));
+
+            NodeList macList = document.getElementsByTagName("mac");
+            NodeList nameList = document.getElementsByTagName("name"); // Use the actual name from the device if available
+
+            String mac = null;
+            String speakerName = name; // Use provided name, or fall back to IP if not provided
+            
+            if (name == null || name.trim().isEmpty()) {
+                // Try to get the name from the device response
+                if (nameList.getLength() > 0) {
+                    Element nameNode = (Element) nameList.item(0);
+                    if (nameNode.getFirstChild() != null) {
+                        speakerName = nameNode.getFirstChild().getNodeValue().toLowerCase();
+                    } else {
+                        speakerName = ip.replace(".", "_"); // Fallback: use IP as name
+                    }
+                } else {
+                    speakerName = ip.replace(".", "_"); // Fallback: use IP as name
+                }
+            }
+            
+            if (macList.getLength() > 0) {
+                Element macNode = (Element) macList.item(0);
+                mac = macNode.getFirstChild().getNodeValue();
+            }
+
+            if (mac != null) {
+                // Check if speaker already exists (by name, IP, or MAC)
+                boolean alreadyExists = false;
+                for (SpeakerInfo existingSpeaker : speakers.values()) {
+                    if (existingSpeaker.getName().equals(speakerName) || 
+                        existingSpeaker.getIp().equals(ip) || 
+                        existingSpeaker.getMac().equals(mac)) {
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+                
+                if (!alreadyExists) {
+                    SpeakerInfo newSpeaker = new SpeakerInfo(speakerName, ip, "55001", mac);
+                    speakers.put(speakerName, newSpeaker);
+                    System.out.println("Manually added speaker: " + newSpeaker.toString());
+                    return ResponseEntity.ok("{\"status\": \"success\", \"message\": \"Speaker added successfully\", \"speaker\": {\"name\": \"" + speakerName + "\", \"ip\": \"" + ip + "\"}}");
+                } else {
+                    return ResponseEntity.badRequest().body("{\"status\": \"error\", \"message\": \"Speaker already exists\"}");
+                }
+            } else {
+                return ResponseEntity.badRequest().body("{\"status\": \"error\", \"message\": \"Could not retrieve MAC address from the device\"}");
+            }
+            
+        } catch (Exception e) {
+            System.out.println("Failed to add speaker at " + ip + ": " + e.getMessage());
+            return ResponseEntity.badRequest().body("{\"status\": \"error\", \"message\": \"Failed to verify speaker at IP: " + e.getMessage() + "\"}");
+        }
     }
 
     private String sendGet(String url) throws Exception {

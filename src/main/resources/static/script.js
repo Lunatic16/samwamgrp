@@ -85,10 +85,11 @@ class SpeakerControllerUI {
     
     displaySpeakers() {
         // Display speakers in the main speakers section
+        let speakerCards = '';
         if (Object.keys(this.speakers).length === 0) {
-            this.speakersContainer.innerHTML = '<p class="loading">No speakers discovered yet. Speakers will appear here when discovered via mDNS.</p>';
+            speakerCards = '<p class="loading">No speakers discovered yet. Speakers will appear here when discovered via mDNS.</p>';
         } else {
-            const speakerCards = Object.values(this.speakers).map(speaker => `
+            speakerCards = Object.values(this.speakers).map(speaker => `
                 <div class="speaker-card">
                     <h3>${this.escapeHtml(speaker.name)}</h3>
                     <div class="speaker-details">
@@ -99,9 +100,31 @@ class SpeakerControllerUI {
                     </div>
                 </div>
             `).join('');
-            
-            this.speakersContainer.innerHTML = speakerCards;
         }
+        
+        // Add manual speaker addition section
+        speakerCards += `
+            <div class="speaker-card">
+                <h3>Manually Add Speaker</h3>
+                <p class="speaker-details">Add Samsung speaker via IP address. The system will verify if it's a Samsung speaker.</p>
+                <div class="form-group">
+                    <label for="manual-speaker-name">Device Name (optional):</label>
+                    <input type="text" id="manual-speaker-name" placeholder="e.g., living_room_speaker">
+                </div>
+                <div class="form-group">
+                    <label for="manual-speaker-ip">IP Address:</label>
+                    <input type="text" id="manual-speaker-ip" placeholder="e.g., 192.168.1.100">
+                </div>
+                <button id="add-manual-speaker-btn" class="btn btn-primary">Add Speaker</button>
+            </div>
+        `;
+        
+        this.speakersContainer.innerHTML = speakerCards;
+        
+        // Add event listener for the manual add button
+        document.getElementById('add-manual-speaker-btn')?.addEventListener('click', () => {
+            this.addManualSpeakerByIP();
+        });
         
         // Display speakers in the group selection section
         if (Object.keys(this.speakers).length === 0) {
@@ -130,6 +153,69 @@ class SpeakerControllerUI {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+    
+    async addManualSpeakerByIP() {
+        const name = document.getElementById('manual-speaker-name').value.trim();
+        const ip = document.getElementById('manual-speaker-ip').value.trim();
+        
+        if (!ip) {
+            this.showMessage('Please enter an IP address', 'error');
+            return;
+        }
+        
+        // Basic IP validation
+        const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (!ipRegex.test(ip)) {
+            this.showMessage('Please enter a valid IP address', 'error');
+            return;
+        }
+        
+        const ipParts = ip.split('.');
+        const isValidIP = ipParts.every(part => parseInt(part, 10) >= 0 && parseInt(part, 10) <= 255);
+        
+        if (!isValidIP) {
+            this.showMessage('Please enter a valid IP address', 'error');
+            return;
+        }
+        
+        // Disable button during request
+        const addBtn = document.getElementById('add-manual-speaker-btn');
+        addBtn.disabled = true;
+        addBtn.textContent = 'Adding...';
+        
+        try {
+            const url = name 
+                ? `${this.apiBaseUrl}/addSpeaker?ip=${encodeURIComponent(ip)}&name=${encodeURIComponent(name)}` 
+                : `${this.apiBaseUrl}/addSpeaker?ip=${encodeURIComponent(ip)}`;
+                
+            const response = await fetch(url, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            
+            // Reload speakers to reflect changes
+            setTimeout(() => {
+                this.loadSpeakers();
+            }, 1000);
+            
+            if (response.status === 200) {
+                this.showMessage(`Speaker added successfully: ${result.speaker.name} (${result.speaker.ip})`, 'success');
+                
+                // Clear the form
+                document.getElementById('manual-speaker-name').value = '';
+                document.getElementById('manual-speaker-ip').value = '';
+            } else {
+                this.showMessage(`Error adding speaker: ${result.message || 'Unknown error'}`, 'error');
+            }
+        } catch (error) {
+            this.showMessage(`Error adding speaker: ${error.message}`, 'error');
+        } finally {
+            // Re-enable button
+            addBtn.disabled = false;
+            addBtn.textContent = 'Add Speaker';
+        }
     }
     
     async createGroup() {
