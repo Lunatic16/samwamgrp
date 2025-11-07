@@ -96,6 +96,7 @@ class SpeakerControllerUI {
                         <p><strong>IP:</strong> ${this.escapeHtml(speaker.ip)}</p>
                         <p><strong>Port:</strong> ${this.escapeHtml(speaker.port)}</p>
                         <p><strong>MAC:</strong> ${this.escapeHtml(speaker.mac)}</p>
+                        <p><strong>Model:</strong> ${this.escapeHtml(speaker.model || 'Unknown')}</p>
                         ${speaker.groupName ? `<p><strong>Group:</strong> ${this.escapeHtml(speaker.groupName)}</p>` : ''}
                     </div>
                 </div>

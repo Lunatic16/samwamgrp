@@ -5,6 +5,7 @@ public class SpeakerInfo {
     private String mac;
     private String ip;
     private String port;
+    private String model;
     private String groupName;
     private boolean isMaster = false;
 
@@ -13,6 +14,14 @@ public class SpeakerInfo {
         this.ip = ip;
         this.mac = mac;
         this.port = port;
+    }
+
+    public SpeakerInfo(String name, String ip, String port, String mac, String model) {
+        this.name = name;
+        this.ip = ip;
+        this.mac = mac;
+        this.port = port;
+        this.model = model;
     }
 
     public String getName() {
@@ -45,6 +54,14 @@ public class SpeakerInfo {
 
     public void setPort(String port) {
         this.port = port;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
     }
 
     public String getGroupName() {
