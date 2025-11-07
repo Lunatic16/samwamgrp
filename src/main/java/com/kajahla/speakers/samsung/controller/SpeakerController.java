@@ -40,8 +40,8 @@ public class SpeakerController {
             // Add a service listener
             jmdns.addServiceListener("_spotify-connect._tcp.local.", new SamsungSpeakerListener());
 
-            // Wait a bit
-            Thread.sleep(30000);
+            // Wait for speakers to be discovered
+            Thread.sleep(60000);
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());

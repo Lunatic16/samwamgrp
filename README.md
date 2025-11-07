@@ -11,7 +11,6 @@ A Spring Boot application for controlling Samsung speakers, featuring a REST API
 - [Web UI](#web-ui)
 - [Scripts](#scripts)
 - [Configuration](#configuration)
-- [Docker Support](#docker-support)
 - [License](#license)
 
 ## Features
@@ -125,16 +124,7 @@ To change the server port or other settings, modify `config/application.properti
 server.port = 8888
 ```
 
-## Docker Support
 
-The project includes a `Dockerfile` for containerization:
-```bash
-# Build the Docker image
-docker build -t samsung-speaker-controller .
-
-# Run the container
-docker run -p 8888:8888 samsung-speaker-controller
-```
 
 ## Development
 
@@ -160,10 +150,9 @@ SamsungSpeakerController/
 │   │           ├── style.css
 │   │           └── script.js
 │   └── test/
-├── start.sh                   # Start script
-├── stop.sh                    # Stop script
-├── pom.xml                    # Maven configuration
-└── Dockerfile
+├── controller.sh                # Controller script (start/stop/status)
+├── pom.xml                      # Maven configuration
+└── README.md
 ```
 
 ### Building from Source
