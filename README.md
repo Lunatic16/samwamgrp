@@ -18,8 +18,10 @@ A Spring Boot application for controlling Samsung speakers, featuring a REST API
 - **Speaker Grouping**: Group multiple Samsung speakers together for synchronized playback
 - **Speaker Ungrouping**: Remove speakers from groups or ungroup all speakers at once
 - **REST API**: Programmatic control via HTTP endpoints
-- **Web Interface**: User-friendly web UI for easy control
-- **mDNS Discovery**: Automatic discovery of Samsung speakers on the network
+- **Web Interface**: Modern user-friendly web UI with tabular speaker display and intuitive controls
+- **mDNS Discovery**: Automatic discovery of Samsung speakers on the network with 30-second discovery interval
+- **Manual Addition**: Option to manually add speakers by IP address
+- **Enhanced UI**: Table-based speaker listing, dropdown selection for grouping, and improved layout
 
 ## Prerequisites
 
@@ -71,9 +73,10 @@ After starting the application, navigate to:
 
 The web UI provides:
 - System status monitoring
-- Speaker discovery and listing
-- Group creation functionality
-- Group management (ungrouping)
+- Speaker discovery and listing (now displayed in a table view with Name, IP, Port, MAC, and Model columns)
+- Group creation functionality with dropdown selection for speakers
+- Group management (ungrouping) now positioned on the right side of the interface
+- Manual speaker addition by IP address
 - Response logging
 
 ## API Endpoints
@@ -124,6 +127,9 @@ To change the server port or other settings, modify `config/application.properti
 server.port = 8888
 ```
 
+### Discovery Settings
+The application automatically scans for Samsung speakers for 30 seconds during startup. This duration is hardcoded in the `SpeakerController.java` file and can be modified by changing the `Thread.sleep(30000)` value (milliseconds).
+
 
 
 ## Development
@@ -154,6 +160,15 @@ SamsungSpeakerController/
 ├── pom.xml                      # Maven configuration
 └── README.md
 ```
+
+### UI Enhancements
+
+The WebUI has been redesigned to match the WAM-Nodejs application style with the following improvements:
+
+1. **Table View**: Speakers are now displayed in a clean table format with Name, IP, Port, MAC, and Model columns
+2. **Dropdown Selection**: Speaker selection for grouping is now done using a multi-select dropdown menu
+3. **Layout Improvements**: Ungroup section is positioned on the right side of the interface
+4. **Automatic Discovery**: Increased discovery time to 30 seconds for more thorough speaker scanning
 
 ### Building from Source
 ```bash
@@ -194,3 +209,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Uses Spring Boot for the web framework
 - Uses JmDNS for service discovery
 - Inspired by the need for better multiroom audio control
+
+## Screenshot
+
+Here's a screenshot of the Samsung Speaker Controller Web UI:
+
+![Samsung Speaker Controller Screenshot](screen.png)
+
