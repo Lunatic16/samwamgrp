@@ -100,7 +100,7 @@ public class SpeakerController {
                         }
                         
                         // Extract model from the device response if available
-                        String model = "Unknown";
+                        String model = "Samsung Speaker";
                         if (modelList.getLength() > 0) {
                             Element modelNode = (Element) modelList.item(0);
                             if (modelNode.getFirstChild() != null) {
@@ -278,7 +278,7 @@ public class SpeakerController {
 
             String mac = null;
             String extractedName = name; // Use provided name, or fall back to device name if not provided
-            String model = "Unknown"; // Default model value
+            String model = "Samsung Speaker"; // Default model value
             
             // Extract MAC from response
             if (macList.getLength() > 0) {
