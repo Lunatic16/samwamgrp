@@ -1,134 +1,178 @@
-// Samsung Speaker Controller Web UI
+// Samsung Speaker Controller Web UI - Updated to match WAM-Nodejs style
 class SpeakerControllerUI {
     constructor() {
         this.apiBaseUrl = `http://localhost:8888`;
         this.speakers = {};
         this.selectedSpeakers = new Set();
-        
+
         this.initializeElements();
         this.bindEvents();
         this.checkConnection();
         this.loadSpeakers();
     }
-    
+
     initializeElements() {
-        this.refreshBtn = document.getElementById('refresh-btn');
+        // Update element selections to match the new HTML structure
+        this.refreshBtn = document.getElementById('refresh-btn') || document.getElementById('discoverBtn') || document.getElementById('refresh-btn');
         this.speakersContainer = document.getElementById('speakers-container');
         this.groupSpeakersContainer = document.getElementById('group-speakers-container');
-        this.groupNameInput = document.getElementById('group-name');
+        this.groupNameInput = document.getElementById('groupName');
         this.createGroupBtn = document.getElementById('create-group-btn');
-        this.selectGroup = document.getElementById('select-group');
+        this.selectGroup = document.getElementById('selectGroup');
         this.ungroupBtn = document.getElementById('ungroup-btn');
         this.responseContainer = document.getElementById('response-container');
-        this.statusText = document.getElementById('status-text');
-        this.statusIndicator = document.getElementById('status-indicator');
+        this.statusIndicator = document.querySelector('#statusText .status-indicator') || document.querySelector('.status-indicator');
+        this.speakerCount = document.getElementById('speakerCount');
+        this.lastDiscovery = document.getElementById('lastDiscovery');
+        this.statusMessage = document.getElementById('statusMessage');
+        
+        // For manual speaker addition
+        this.addManualSpeakerBtn = document.getElementById('addManualSpeakerBtn') || document.getElementById('add-manual-speaker-btn');
+        this.manualSpeakerName = document.getElementById('manualSpeakerName') || document.getElementById('manual-speaker-name');
+        this.manualSpeakerIp = document.getElementById('manualSpeakerIp') || document.getElementById('manual-speaker-ip');
     }
-    
+
     bindEvents() {
-        this.refreshBtn.addEventListener('click', () => this.loadSpeakers());
-        this.createGroupBtn.addEventListener('click', () => this.createGroup());
-        this.ungroupBtn.addEventListener('click', () => this.ungroup());
+        this.refreshBtn?.addEventListener('click', () => this.loadSpeakers());
+        this.createGroupBtn?.addEventListener('click', () => this.createGroup());
+        this.ungroupBtn?.addEventListener('click', () => this.ungroup());
+        
+        // Add manual speaker button event
+        this.addManualSpeakerBtn?.addEventListener('click', () => this.addManualSpeakerByIP());
     }
-    
+
     async checkConnection() {
         try {
-            // Check if the API is reachable by fetching speakers
             const response = await fetch(`${this.apiBaseUrl}/speakers`);
             if (response.ok) {
-                this.updateStatus(true, 'Connected');
+                this.updateSystemStatus(true, 'Connected');
             } else {
-                this.updateStatus(false, 'Connection Error');
+                this.updateSystemStatus(false, 'Connection Error');
             }
         } catch (error) {
-            this.updateStatus(false, 'Server Unreachable');
+            this.updateSystemStatus(false, 'Server Unreachable');
         }
     }
-    
-    updateStatus(connected, message) {
-        this.statusText.textContent = message;
-        this.statusIndicator.className = 'status-dot';
-        if (connected) {
-            this.statusIndicator.classList.add('connected');
-        } else {
-            this.statusIndicator.classList.add('disconnected');
+
+    updateSystemStatus(connected, message) {
+        // Update the status indicator in the system status panel
+        if (this.statusIndicator) {
+            this.statusIndicator.className = connected ? 'status-indicator connected' : 'status-indicator disconnected';
+            if (connected) {
+                this.statusIndicator.style.backgroundColor = '#28a745';
+            } else {
+                this.statusIndicator.style.backgroundColor = '#dc3545';
+            }
         }
     }
-    
+
     async loadSpeakers() {
         this.showLoading(this.speakersContainer);
         this.showLoading(this.groupSpeakersContainer);
-        
+
         try {
             const response = await fetch(`${this.apiBaseUrl}/speakers`);
             const speakers = await response.json();
-            
+
             this.speakers = {};
             speakers.forEach(speaker => {
                 this.speakers[speaker.name] = speaker;
             });
-            
+
             this.displaySpeakers();
+
+            // Update the system status info
+            if (this.speakerCount) {
+                this.speakerCount.textContent = Object.keys(this.speakers).length;
+            }
+
+            if (this.lastDiscovery) {
+                this.lastDiscovery.textContent = new Date().toLocaleTimeString();
+            }
+
         } catch (error) {
             console.error('Error loading speakers:', error);
             this.showError('Error loading speakers: ' + error.message, this.speakersContainer);
             this.showError('Error loading speakers: ' + error.message, this.groupSpeakersContainer);
         }
     }
-    
+
     showLoading(container) {
-        container.innerHTML = '<p class="loading">Loading speakers...</p>';
+        if (container) {
+            container.innerHTML = '<p class="loading">Loading speakers...</p>';
+        }
     }
-    
+
     showError(message, container) {
-        container.innerHTML = `<p class="error">${message}</p>`;
+        if (container) {
+            container.innerHTML = `<p class="error">${message}</p>`;
+        }
     }
-    
+
     displaySpeakers() {
-        // Display speakers in the main speakers section
-        let speakerCards = '';
+        // Display speakers in the main speakers section using Bootstrap card style
+        let speakerItems = '';
         if (Object.keys(this.speakers).length === 0) {
-            speakerCards = '<p class="loading">No speakers discovered yet. Speakers will appear here when discovered via mDNS.</p>';
+            speakerItems = '<p class="loading">No speakers discovered yet. Speakers will appear here when discovered via mDNS.</p>';
         } else {
-            speakerCards = Object.values(this.speakers).map(speaker => `
-                <div class="speaker-card">
-                    <h3>${this.escapeHtml(speaker.name)}</h3>
-                    <div class="speaker-details">
-                        <p><strong>IP:</strong> ${this.escapeHtml(speaker.ip)}</p>
-                        <p><strong>Port:</strong> ${this.escapeHtml(speaker.port)}</p>
-                        <p><strong>MAC:</strong> ${this.escapeHtml(speaker.mac)}</p>
-                        <p><strong>Model:</strong> ${this.escapeHtml(speaker.model || 'Samsung Speaker')}</p>
-                        ${speaker.groupName ? `<p><strong>Group:</strong> ${this.escapeHtml(speaker.groupName)}</p>` : ''}
+            speakerItems = Object.values(this.speakers).map(speaker => `
+                <div class="speaker-item card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="speaker-info">
+                                <h5 class="card-title">${this.escapeHtml(speaker.name)}</h5>
+                                <div class="speaker-details">
+                                    <p class="card-text mb-1"><small class="text-muted">IP: ${this.escapeHtml(speaker.ip)}</small></p>
+                                    <p class="card-text mb-1"><small class="text-muted">Port: ${this.escapeHtml(speaker.port)}</small></p>
+                                    <p class="card-text mb-1"><small class="text-muted">MAC: ${this.escapeHtml(speaker.mac)}</small></p>
+                                    <p class="card-text mb-0"><small class="text-muted">Model: ${this.escapeHtml(speaker.model || 'Samsung Speaker')}</small></p>
+                                    ${speaker.groupName ? `<p class="card-text mb-0"><small class="text-muted">Group: ${this.escapeHtml(speaker.groupName)}</small></p>` : ''}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `).join('');
         }
-        
-        this.speakersContainer.innerHTML = speakerCards;
-        
+
+        if (this.speakersContainer) {
+            this.speakersContainer.innerHTML = speakerItems;
+        }
+
         // Display speakers in the group selection section
         if (Object.keys(this.speakers).length === 0) {
-            this.groupSpeakersContainer.innerHTML = '<p class="loading">No speakers discovered yet. Speakers will appear here for grouping.</p>';
+            if (this.groupSpeakersContainer) {
+                this.groupSpeakersContainer.innerHTML = '<p class="loading">No speakers discovered yet. Speakers will appear here for grouping.</p>';
+            }
         } else {
             const speakerCheckboxes = Object.values(this.speakers).map(speaker => `
-                <div class="speaker-checkbox">
-                    <input type="checkbox" id="chk_${this.escapeHtml(speaker.name)}" value="${this.escapeHtml(speaker.name)}" 
-                        onchange="speakerUI.toggleSpeakerSelection('${this.escapeHtml(speaker.name)}')">
-                    <label for="chk_${this.escapeHtml(speaker.name)}">
-                        <strong>${this.escapeHtml(speaker.name)}</strong> - ${this.escapeHtml(speaker.ip)}
-                        ${speaker.groupName ? ` (Group: ${this.escapeHtml(speaker.groupName)})` : ''}
-                    </label>
+                <div class="speaker-item card mb-2">
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input speaker-checkbox" type="checkbox" 
+                                id="chk_${this.escapeHtml(speaker.name)}" 
+                                value="${this.escapeHtml(speaker.name)}" 
+                                onchange="speakerUI.toggleSpeakerSelection('${this.escapeHtml(speaker.name)}')">
+                            <label class="form-check-label" for="chk_${this.escapeHtml(speaker.name)}">
+                                <strong>${this.escapeHtml(speaker.name)}</strong> - ${this.escapeHtml(speaker.ip)}
+                                ${speaker.groupName ? ` (Group: ${this.escapeHtml(speaker.groupName)})` : ''}
+                            </label>
+                        </div>
+                    </div>
                 </div>
             `).join('');
-            
-            this.groupSpeakersContainer.innerHTML = speakerCheckboxes;
+
+            if (this.groupSpeakersContainer) {
+                this.groupSpeakersContainer.innerHTML = speakerCheckboxes;
+            }
         }
-        
-        // Add event listener for the manual add button if it exists on the page
-        document.getElementById('add-manual-speaker-btn')?.addEventListener('click', () => {
-            this.addManualSpeakerByIP();
-        });
+
+        // Update speaker count in the status panel
+        if (this.speakerCount) {
+            this.speakerCount.textContent = Object.keys(this.speakers).length;
+        }
     }
-    
+
     escapeHtml(text) {
         if (!text) return '';
         return text.toString()
@@ -138,61 +182,62 @@ class SpeakerControllerUI {
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
-    
+
     async addManualSpeakerByIP() {
-        const name = document.getElementById('manual-speaker-name').value.trim();
-        const ip = document.getElementById('manual-speaker-ip').value.trim();
-        
+        const name = this.manualSpeakerName?.value.trim() || '';
+        const ip = this.manualSpeakerIp?.value.trim();
+
         if (!ip) {
             this.showMessage('Please enter an IP address', 'error');
             return;
         }
-        
+
         // Basic IP validation
         const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
         if (!ipRegex.test(ip)) {
             this.showMessage('Please enter a valid IP address', 'error');
             return;
         }
-        
+
         const ipParts = ip.split('.');
         const isValidIP = ipParts.every(part => parseInt(part, 10) >= 0 && parseInt(part, 10) <= 255);
-        
+
         if (!isValidIP) {
             this.showMessage('Please enter a valid IP address', 'error');
             return;
         }
-        
+
         // Disable button during request
-        const addBtn = document.getElementById('add-manual-speaker-btn');
-        addBtn.disabled = true;
-        addBtn.textContent = 'Adding...';
-        
+        if (this.addManualSpeakerBtn) {
+            this.addManualSpeakerBtn.disabled = true;
+            this.addManualSpeakerBtn.textContent = 'Adding...';
+        }
+
         try {
             const params = new URLSearchParams();
             params.append('ip', ip);
             if (name && name.trim()) {
                 params.append('name', name);
             }
-            
+
             const response = await fetch(`${this.apiBaseUrl}/addSpeaker?${params.toString()}`, {
                 method: 'POST'
             });
-            
-            const responseText = await response.text(); // Get text response to parse JSON properly
-            
+
+            const responseText = await response.text();
+
             // Reload speakers to reflect changes
             setTimeout(() => {
                 this.loadSpeakers();
             }, 1000);
-            
+
             if (response.ok) {
                 const result = JSON.parse(responseText);
                 this.showMessage(`Speaker added successfully: ${result.speaker ? result.speaker.name : 'Unknown'} (${ip})`, 'success');
-                
+
                 // Clear the form
-                document.getElementById('manual-speaker-name').value = '';
-                document.getElementById('manual-speaker-ip').value = '';
+                if (this.manualSpeakerName) this.manualSpeakerName.value = '';
+                if (this.manualSpeakerIp) this.manualSpeakerIp.value = '';
             } else {
                 // Handle both JSON and plain text error responses
                 let errorMessage = 'Unknown error';
@@ -209,28 +254,32 @@ class SpeakerControllerUI {
             this.showMessage(`Error adding speaker: ${error.message}`, 'error');
         } finally {
             // Re-enable button
-            addBtn.disabled = false;
-            addBtn.textContent = 'Add Speaker';
+            if (this.addManualSpeakerBtn) {
+                this.addManualSpeakerBtn.disabled = false;
+                this.addManualSpeakerBtn.textContent = 'Add Speaker';
+            }
         }
     }
-    
+
     async createGroup() {
-        const groupName = this.groupNameInput.value.trim();
+        const groupName = this.groupNameInput?.value.trim();
         const speakersToGroup = Array.from(this.selectedSpeakers);
-        
+
         if (speakersToGroup.length === 0) {
             this.showMessage('Please select at least one speaker to group', 'error');
             return;
         }
-        
+
         if (speakersToGroup.length < 2) {
             this.showMessage('You need at least 2 speakers to create a group', 'error');
             return;
         }
-        
-        this.createGroupBtn.disabled = true;
-        this.createGroupBtn.textContent = 'Creating...';
-        
+
+        if (this.createGroupBtn) {
+            this.createGroupBtn.disabled = true;
+            this.createGroupBtn.textContent = 'Creating...';
+        }
+
         try {
             const response = await fetch(`${this.apiBaseUrl}/group`, {
                 method: 'POST',
@@ -241,95 +290,114 @@ class SpeakerControllerUI {
                     speakerName: speakersToGroup
                 })
             });
-            
+
             const result = await response.text();
             this.showMessage(`Group creation response: ${result}`, response.status === 200 ? 'success' : 'error');
-            
+
             // Reload speakers to reflect changes
             setTimeout(() => {
                 this.loadSpeakers();
             }, 1000);
-            
+
         } catch (error) {
             this.showMessage(`Error creating group: ${error.message}`, 'error');
         } finally {
-            this.createGroupBtn.disabled = false;
-            this.createGroupBtn.textContent = 'Create Group';
+            if (this.createGroupBtn) {
+                this.createGroupBtn.disabled = false;
+                this.createGroupBtn.textContent = 'Create Group';
+            }
         }
     }
-    
+
     async ungroup() {
-        const selectedGroup = this.selectGroup.value;
-        
+        const selectedGroup = this.selectGroup?.value;
+
         if (!selectedGroup) {
             this.showMessage('Please select a group to ungroup', 'error');
             return;
         }
-        
-        this.ungroupBtn.disabled = true;
-        this.ungroupBtn.textContent = 'Ungrouping...';
-        
+
+        if (this.ungroupBtn) {
+            this.ungroupBtn.disabled = true;
+            this.ungroupBtn.textContent = 'Ungrouping...';
+        }
+
         try {
             const url = selectedGroup === 'all' 
                 ? `${this.apiBaseUrl}/ungroup` 
                 : `${this.apiBaseUrl}/ungroup?group_name=${encodeURIComponent(selectedGroup)}`;
-                
+
             const response = await fetch(url, {
                 method: 'GET'
             });
-            
+
             const result = await response.text();
             this.showMessage(`Ungroup response: ${result}`, response.status === 200 ? 'success' : 'error');
-            
+
             // Reload speakers to reflect changes
             setTimeout(() => {
                 this.loadSpeakers();
             }, 1000);
-            
+
         } catch (error) {
             this.showMessage(`Error ungrouping: ${error.message}`, 'error');
         } finally {
-            this.ungroupBtn.disabled = false;
-            this.ungroupBtn.textContent = 'Ungroup';
+            if (this.ungroupBtn) {
+                this.ungroupBtn.disabled = false;
+                this.ungroupBtn.textContent = 'Ungroup';
+            }
         }
     }
-    
+
     showMessage(message, type = 'info') {
-        this.responseContainer.innerHTML = `<div class="message ${type}">${message}</div>`;
+        // Map our message types to Bootstrap alert classes
+        let alertClass = 'alert alert-info';
+        if (type === 'success') {
+            alertClass = 'alert alert-success';
+        } else if (type === 'error') {
+            alertClass = 'alert alert-danger';
+        } else if (type === 'warning') {
+            alertClass = 'alert alert-warning';
+        }
         
-        // Auto-scroll to response
-        this.responseContainer.scrollIntoView({ behavior: 'smooth' });
+        if (this.responseContainer) {
+            this.responseContainer.innerHTML = `<div class="${alertClass}" role="alert">${message}</div>`;
+        }
+        
+        // Update status message
+        if (this.statusMessage) {
+            this.statusMessage.textContent = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+        }
     }
-    
+
     toggleSpeakerSelection(speakerName) {
         if (this.selectedSpeakers.has(speakerName)) {
             this.selectedSpeakers.delete(speakerName);
         } else {
             this.selectedSpeakers.add(speakerName);
         }
-        
+
         // Update UI to reflect selection
-        const checkboxes = document.querySelectorAll('.speaker-checkbox input[type="checkbox"]');
+        const checkboxes = document.querySelectorAll('input.speaker-checkbox');
         checkboxes.forEach(checkbox => {
             if (checkbox.value === speakerName) {
                 checkbox.checked = this.selectedSpeakers.has(speakerName);
-                
-                // Update the parent element's selected class
-                const parent = checkbox.closest('.speaker-checkbox');
-                if (this.selectedSpeakers.has(speakerName)) {
-                    parent.classList.add('selected');
-                } else {
-                    parent.classList.remove('selected');
+
+                // Update the parent card's appearance
+                const card = checkbox.closest('.card');
+                if (card) {
+                    if (this.selectedSpeakers.has(speakerName)) {
+                        card.classList.add('border-primary', 'shadow-sm');
+                    } else {
+                        card.classList.remove('border-primary', 'shadow-sm');
+                    }
                 }
             }
         });
     }
 }
 
-// Global variable to allow access from inline event handlers
-let speakerUI;
-
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    speakerUI = new SpeakerControllerUI();
+    window.speakerUI = new SpeakerControllerUI();
 });

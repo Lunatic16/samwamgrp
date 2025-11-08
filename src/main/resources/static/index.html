@@ -4,84 +4,255 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Samsung Speaker Controller</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-indicator.connected {
+            background-color: #28a745;
+        }
+        .status-indicator.disconnected {
+            background-color: #dc3545;
+        }
+        .speaker-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        .speaker-item.selected {
+            border: 2px solid #3498db;
+            background-color: #e3f2fd;
+        }
+        .speaker-info {
+            flex-grow: 1;
+        }
+        .speaker-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        .speaker-details {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .speaker-controls {
+            display: flex;
+            gap: 10px;
+            margin-left: 10px;
+        }
+        .manual-add-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .manual-add-form input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            flex: 1;
+            min-width: 150px;
+        }
+        .control-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        .control-group h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .loading {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .success {
+            color: #2ecc71;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .message.error {
+            background-color: #ffebee;
+            border-left: 4px solid #e74c3c;
+        }
+        .message.success {
+            background-color: #e8f5e9;
+            border-left: 4px solid #2ecc71;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Samsung Speaker Controller</h1>
+    <div class="container-fluid">
+        <header class="py-3 border-bottom">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="h3 mb-0">Samsung Speaker Controller</h1>
+                    <p class="text-muted mb-0">Control your Samsung Wireless Speakers</p>
+                </div>
+                <div class="col-auto">
+                    <button id="refresh-btn" class="btn btn-outline-secondary">Refresh Speakers</button>
+                </div>
+            </div>
         </header>
 
-        <main>
-            <section class="status-section">
-                <h2>System Status</h2>
-                <div class="status-indicator">
-                    <span id="status-text">Checking connection...</span>
-                    <span id="status-indicator" class="status-dot"></span>
-                </div>
-                <button id="refresh-btn" class="btn btn-primary">Refresh Speakers</button>
-            </section>
-
-            <section class="speakers-section">
-                <h2>Discovered Speakers</h2>
-                <div id="speakers-container" class="speakers-container">
-                    <p class="loading">Loading speakers...</p>
-                </div>
-            </section>
-
-            <section class="group-section">
-                <h2>Create Speaker Group</h2>
-                <div class="form-group">
-                    <label for="group-name">Group Name (optional):</label>
-                    <input type="text" id="group-name" placeholder="Enter group name">
-                </div>
-                
-                <div class="form-group">
-                    <label>Select speakers to group:</label>
-                    <div id="group-speakers-container" class="speakers-list">
-                        <p class="loading">Loading speakers...</p>
+        <main class="py-4">
+            <!-- Manual Add Section -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Add Speaker Manually</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="manualSpeakerName" class="form-label">Device Name (Optional)</label>
+                                    <input type="text" class="form-control" id="manualSpeakerName" placeholder="e.g., living_room_speaker">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="manualSpeakerIp" class="form-label">IP Address</label>
+                                    <input type="text" class="form-control" id="manualSpeakerIp" placeholder="e.g., 192.168.1.100">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">&nbsp;</label> <!-- Spacer for alignment -->
+                                    <button id="addManualSpeakerBtn" class="btn btn-success w-100">Add Speaker</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <button id="create-group-btn" class="btn btn-primary">Create Group</button>
-            </section>
+            </div>
 
-            <section class="ungroup-section">
-                <h2>Manage Groups</h2>
-                <div class="form-group">
-                    <label for="select-group">Select Group to Ungroup:</label>
-                    <select id="select-group">
-                        <option value="">-- Select a group --</option>
-                        <option value="all">All Groups</option>
-                    </select>
+            <!-- System Status Section -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">System Status</h5>
+                            <div id="statusText">
+                                <span class="status-indicator disconnected"></span>
+                                <span>Status: Disconnected</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <strong>Discovered Speakers:</strong> <span id="speakerCount">0</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Last Discovery:</strong> <span id="lastDiscovery">Never</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Status Message:</strong> <span id="statusMessage">Ready</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <button id="ungroup-btn" class="btn btn-danger">Ungroup</button>
-            </section>
+            </div>
 
-            <section class="manual-add-section">
-                <h2>Add Speaker Manually</h2>
-                <div class="form-group">
-                    <label for="manual-speaker-name">Device Name (optional):</label>
-                    <input type="text" id="manual-speaker-name" placeholder="e.g., living_room_speaker">
+            <!-- Discovered Speakers Section -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Discovered Speakers</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="speakers-container" class="speaker-list">
+                                <p class="loading">Loading speakers...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="manual-speaker-ip">IP Address:</label>
-                    <input type="text" id="manual-speaker-ip" placeholder="e.g., 192.168.1.100">
-                </div>
-                <button id="add-manual-speaker-btn" class="btn btn-success">Add Speaker</button>
-            </section>
+            </div>
 
-            <section class="response-section">
-                <h2>System Response</h2>
-                <div id="response-container" class="response-box">
-                    <p>Ready to use. Waiting for actions...</p>
+            <!-- Group Management Section -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Group Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="control-group">
+                                <h3>Create Speaker Group</h3>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label for="groupName" class="form-label">Group Name (Optional)</label>
+                                        <input type="text" class="form-control" id="groupName" placeholder="Enter group name">
+                                    </div>
+                                </div>
+                                
+                                <h4>Select Speakers to Group</h4>
+                                <div id="group-speakers-container" class="speaker-list">
+                                    <p class="loading">Loading speakers...</p>
+                                </div>
+                                
+                                <button id="create-group-btn" class="btn btn-success mt-3">Create Group</button>
+                            </div>
+
+                            <div class="control-group">
+                                <h3>Ungroup Speakers</h3>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label for="selectGroup" class="form-label">Select Group to Ungroup</label>
+                                        <select class="form-select" id="selectGroup">
+                                            <option value="">-- Select a group --</option>
+                                            <option value="all">All Groups</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <button id="ungroup-btn" class="btn btn-danger">Ungroup</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            </div>
+
+            <!-- Response Section -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">System Response</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="response-container" class="bg-light p-3 rounded">
+                                <p>Ready to use. Waiting for actions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
