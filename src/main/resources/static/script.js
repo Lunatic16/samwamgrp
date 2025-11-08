@@ -13,9 +13,9 @@ class SpeakerControllerUI {
 
     initializeElements() {
         // Update element selections to match the new HTML structure
-        this.refreshBtn = document.getElementById('refresh-btn') || document.getElementById('discoverBtn') || document.getElementById('refresh-btn');
+        this.refreshBtn = document.getElementById('refresh-btn');
         this.speakersContainer = document.getElementById('speakers-container');
-        this.groupSpeakersContainer = document.getElementById('group-speakers-container');
+        this.selectSpeakersDropdown = document.getElementById('select-speakers-to-group');
         this.groupNameInput = document.getElementById('groupName');
         this.createGroupBtn = document.getElementById('create-group-btn');
         this.selectGroup = document.getElementById('selectGroup');
@@ -27,9 +27,9 @@ class SpeakerControllerUI {
         this.statusMessage = document.getElementById('statusMessage');
         
         // For manual speaker addition
-        this.addManualSpeakerBtn = document.getElementById('addManualSpeakerBtn') || document.getElementById('add-manual-speaker-btn');
-        this.manualSpeakerName = document.getElementById('manualSpeakerName') || document.getElementById('manual-speaker-name');
-        this.manualSpeakerIp = document.getElementById('manualSpeakerIp') || document.getElementById('manual-speaker-ip');
+        this.addManualSpeakerBtn = document.getElementById('addManualSpeakerBtn');
+        this.manualSpeakerName = document.getElementById('manualSpeakerName');
+        this.manualSpeakerIp = document.getElementById('manualSpeakerIp');
     }
 
     bindEvents() {
@@ -110,60 +110,47 @@ class SpeakerControllerUI {
     }
 
     displaySpeakers() {
-        // Display speakers in the main speakers section using Bootstrap card style
-        let speakerItems = '';
+        // Display speakers in the main speakers section as a table
+        let speakerRows = '';
         if (Object.keys(this.speakers).length === 0) {
-            speakerItems = '<p class="loading">No speakers discovered yet. Speakers will appear here when discovered via mDNS.</p>';
+            speakerRows = '<tr><td colspan="5" class="text-center"><span class="loading">No speakers discovered yet. Speakers will appear here when discovered via mDNS.</span></td></tr>';
         } else {
-            speakerItems = Object.values(this.speakers).map(speaker => `
-                <div class="speaker-item card mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="speaker-info">
-                                <h5 class="card-title">${this.escapeHtml(speaker.name)}</h5>
-                                <div class="speaker-details">
-                                    <p class="card-text mb-1"><small class="text-muted">IP: ${this.escapeHtml(speaker.ip)}</small></p>
-                                    <p class="card-text mb-1"><small class="text-muted">Port: ${this.escapeHtml(speaker.port)}</small></p>
-                                    <p class="card-text mb-1"><small class="text-muted">MAC: ${this.escapeHtml(speaker.mac)}</small></p>
-                                    <p class="card-text mb-0"><small class="text-muted">Model: ${this.escapeHtml(speaker.model || 'Samsung Speaker')}</small></p>
-                                    ${speaker.groupName ? `<p class="card-text mb-0"><small class="text-muted">Group: ${this.escapeHtml(speaker.groupName)}</small></p>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            speakerRows = Object.values(this.speakers).map(speaker => `
+                <tr>
+                    <td>${this.escapeHtml(speaker.name)}</td>
+                    <td>${this.escapeHtml(speaker.ip)}</td>
+                    <td>${this.escapeHtml(speaker.port)}</td>
+                    <td>${this.escapeHtml(speaker.mac)}</td>
+                    <td>${this.escapeHtml(speaker.model || 'Samsung Speaker')}</td>
+                </tr>
             `).join('');
         }
 
         if (this.speakersContainer) {
-            this.speakersContainer.innerHTML = speakerItems;
+            this.speakersContainer.innerHTML = speakerRows;
         }
 
-        // Display speakers in the group selection section
+        // Fill the speaker selection dropdown with available speakers
         if (Object.keys(this.speakers).length === 0) {
-            if (this.groupSpeakersContainer) {
-                this.groupSpeakersContainer.innerHTML = '<p class="loading">No speakers discovered yet. Speakers will appear here for grouping.</p>';
+            if (this.selectSpeakersDropdown) {
+                this.selectSpeakersDropdown.innerHTML = '<option value="" disabled>No speakers discovered yet</option>';
             }
         } else {
-            const speakerCheckboxes = Object.values(this.speakers).map(speaker => `
-                <div class="speaker-item card mb-2">
-                    <div class="card-body">
-                        <div class="form-check">
-                            <input class="form-check-input speaker-checkbox" type="checkbox" 
-                                id="chk_${this.escapeHtml(speaker.name)}" 
-                                value="${this.escapeHtml(speaker.name)}" 
-                                onchange="speakerUI.toggleSpeakerSelection('${this.escapeHtml(speaker.name)}')">
-                            <label class="form-check-label" for="chk_${this.escapeHtml(speaker.name)}">
-                                <strong>${this.escapeHtml(speaker.name)}</strong> - ${this.escapeHtml(speaker.ip)}
-                                ${speaker.groupName ? ` (Group: ${this.escapeHtml(speaker.groupName)})` : ''}
-                            </label>
-                        </div>
-                    </div>
-                </div>
+            // Generate dropdown options for speaker selection
+            const speakerOptions = Object.values(this.speakers).map(speaker => `
+                <option value="${this.escapeHtml(speaker.name)}" 
+                    data-ip="${this.escapeHtml(speaker.ip)}"
+                    data-port="${this.escapeHtml(speaker.port)}"
+                    data-mac="${this.escapeHtml(speaker.mac)}"
+                    data-model="${this.escapeHtml(speaker.model || 'Samsung Speaker')}"
+                    data-group="${this.escapeHtml(speaker.groupName || '')}">
+                    ${this.escapeHtml(speaker.name)} - ${this.escapeHtml(speaker.ip)}
+                    ${speaker.groupName ? ` (Group: ${this.escapeHtml(speaker.groupName)})` : ''}
+                </option>
             `).join('');
 
-            if (this.groupSpeakersContainer) {
-                this.groupSpeakersContainer.innerHTML = speakerCheckboxes;
+            if (this.selectSpeakersDropdown) {
+                this.selectSpeakersDropdown.innerHTML = speakerOptions;
             }
         }
 
@@ -263,14 +250,23 @@ class SpeakerControllerUI {
 
     async createGroup() {
         const groupName = this.groupNameInput?.value.trim();
-        const speakersToGroup = Array.from(this.selectedSpeakers);
-
-        if (speakersToGroup.length === 0) {
+        
+        // Get selected speakers from the dropdown
+        const selectElement = this.selectSpeakersDropdown;
+        if (!selectElement) {
+            this.showMessage('Speaker selection dropdown not found', 'error');
+            return;
+        }
+        
+        // Get all selected options
+        const selectedSpeakers = Array.from(selectElement.selectedOptions).map(option => option.value);
+        
+        if (selectedSpeakers.length === 0) {
             this.showMessage('Please select at least one speaker to group', 'error');
             return;
         }
 
-        if (speakersToGroup.length < 2) {
+        if (selectedSpeakers.length < 2) {
             this.showMessage('You need at least 2 speakers to create a group', 'error');
             return;
         }
@@ -287,7 +283,7 @@ class SpeakerControllerUI {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    speakerName: speakersToGroup
+                    speakerName: selectedSpeakers
                 })
             });
 

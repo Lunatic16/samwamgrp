@@ -182,8 +182,23 @@
                             <h5 class="mb-0">Discovered Speakers</h5>
                         </div>
                         <div class="card-body">
-                            <div id="speakers-container" class="speaker-list">
-                                <p class="loading">Loading speakers...</p>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="speakers-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>IP Address</th>
+                                            <th>Port</th>
+                                            <th>MAC Address</th>
+                                            <th>Model</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="speakers-container">
+                                        <tr>
+                                            <td colspan="5" class="text-center"><span class="loading">Loading speakers...</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -192,7 +207,7 @@
 
             <!-- Group Management Section -->
             <div class="row mb-4">
-                <div class="col-md-12">
+                <div class="col-md-8">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Group Management</h5>
@@ -208,23 +223,34 @@
                                 </div>
                                 
                                 <h4>Select Speakers to Group</h4>
-                                <div id="group-speakers-container" class="speaker-list">
-                                    <p class="loading">Loading speakers...</p>
-                                </div>
-                                
-                                <button id="create-group-btn" class="btn btn-success mt-3">Create Group</button>
-                            </div>
-
-                            <div class="control-group">
-                                <h3>Ungroup Speakers</h3>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-4">
-                                        <label for="selectGroup" class="form-label">Select Group to Ungroup</label>
-                                        <select class="form-select" id="selectGroup">
-                                            <option value="">-- Select a group --</option>
-                                            <option value="all">All Groups</option>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="select-speakers-to-group" class="form-label">Select Speakers</label>
+                                        <select multiple class="form-select" id="select-speakers-to-group" size="8">
+                                            <option value="" disabled>No speakers discovered yet</option>
                                         </select>
                                     </div>
+                                </div>
+                                
+                                <button id="create-group-btn" class="btn btn-success">Create Group</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Ungroup Speakers</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="control-group">
+                                <div class="mb-3">
+                                    <label for="selectGroup" class="form-label">Select Group to Ungroup</label>
+                                    <select class="form-select" id="selectGroup">
+                                        <option value="">-- Select a group --</option>
+                                        <option value="all">All Groups</option>
+                                    </select>
                                 </div>
                                 
                                 <button id="ungroup-btn" class="btn btn-danger">Ungroup</button>
