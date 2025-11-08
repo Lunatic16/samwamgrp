@@ -15,7 +15,7 @@ class SpeakerControllerUI {
         // Update element selections to match the new HTML structure
         this.refreshBtn = document.getElementById('refresh-btn');
         this.speakersContainer = document.getElementById('speakers-container');
-        this.selectSpeakersDropdown = document.getElementById('select-speakers-to-group');
+        this.groupSpeakersContainer = document.getElementById('group-speakers-container');
         this.groupNameInput = document.getElementById('groupName');
         this.createGroupBtn = document.getElementById('create-group-btn');
         this.selectGroup = document.getElementById('selectGroup');
@@ -130,27 +130,25 @@ class SpeakerControllerUI {
             this.speakersContainer.innerHTML = speakerRows;
         }
 
-        // Fill the speaker selection dropdown with available speakers
+        // Fill the speaker selection with checkboxes
         if (Object.keys(this.speakers).length === 0) {
-            if (this.selectSpeakersDropdown) {
-                this.selectSpeakersDropdown.innerHTML = '<option value="" disabled>No speakers discovered yet</option>';
+            if (this.groupSpeakersContainer) {
+                this.groupSpeakersContainer.innerHTML = '<p class="loading">No speakers discovered yet. Speakers will appear here for grouping.</p>';
             }
         } else {
-            // Generate dropdown options for speaker selection
-            const speakerOptions = Object.values(this.speakers).map(speaker => `
-                <option value="${this.escapeHtml(speaker.name)}" 
-                    data-ip="${this.escapeHtml(speaker.ip)}"
-                    data-port="${this.escapeHtml(speaker.port)}"
-                    data-mac="${this.escapeHtml(speaker.mac)}"
-                    data-model="${this.escapeHtml(speaker.model || 'Samsung Speaker')}"
-                    data-group="${this.escapeHtml(speaker.groupName || '')}">
-                    ${this.escapeHtml(speaker.name)} - ${this.escapeHtml(speaker.ip)}
-                    ${speaker.groupName ? ` (Group: ${this.escapeHtml(speaker.groupName)})` : ''}
-                </option>
+            const speakerCheckboxes = Object.values(this.speakers).map(speaker => `
+                <div class="speaker-checkbox" data-speaker-name="${this.escapeHtml(speaker.name)}">
+                    <input type="checkbox" id="chk_${this.escapeHtml(speaker.name)}" value="${this.escapeHtml(speaker.name)}" 
+                        onchange="speakerUI.toggleSpeakerSelection('${this.escapeHtml(speaker.name)}')">
+                    <label for="chk_${this.escapeHtml(speaker.name)}">
+                        <strong>${this.escapeHtml(speaker.name)}</strong> - ${this.escapeHtml(speaker.ip)}
+                        ${speaker.groupName ? ` (Group: ${this.escapeHtml(speaker.groupName)})` : ''}
+                    </label>
+                </div>
             `).join('');
 
-            if (this.selectSpeakersDropdown) {
-                this.selectSpeakersDropdown.innerHTML = speakerOptions;
+            if (this.groupSpeakersContainer) {
+                this.groupSpeakersContainer.innerHTML = speakerCheckboxes;
             }
         }
 
@@ -251,15 +249,14 @@ class SpeakerControllerUI {
     async createGroup() {
         const groupName = this.groupNameInput?.value.trim();
         
-        // Get selected speakers from the dropdown
-        const selectElement = this.selectSpeakersDropdown;
-        if (!selectElement) {
-            this.showMessage('Speaker selection dropdown not found', 'error');
+        // Get selected speakers from the checkboxes
+        const selectedSpeakerElements = document.querySelectorAll('.speaker-checkbox input[type="checkbox"]:checked');
+        if (!selectedSpeakerElements) {
+            this.showMessage('Speaker checkbox selection not found', 'error');
             return;
         }
         
-        // Get all selected options
-        const selectedSpeakers = Array.from(selectElement.selectedOptions).map(option => option.value);
+        const selectedSpeakers = Array.from(selectedSpeakerElements).map(checkbox => checkbox.value);
         
         if (selectedSpeakers.length === 0) {
             this.showMessage('Please select at least one speaker to group', 'error');
