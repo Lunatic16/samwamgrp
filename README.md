@@ -2,6 +2,12 @@
 
 A Spring Boot application for controlling Samsung speakers, featuring a REST API and a web-based user interface.
 
+## Screenshot
+
+Here's a screenshot of the Samsung Speaker Controller Web UI:
+
+![Samsung Speaker Controller Screenshot](screen.png)
+
 ## Table of Contents
 - [Features](#features)
 - [Prerequisites](#prerequisites)
@@ -209,10 +215,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Uses Spring Boot for the web framework
 - Uses JmDNS for service discovery
 - Inspired by the need for better multiroom audio control
-
-## Screenshot
-
-Here's a screenshot of the Samsung Speaker Controller Web UI:
-
-![Samsung Speaker Controller Screenshot](screen.png)
 
